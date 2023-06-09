@@ -1,0 +1,106 @@
+import typer
+import os
+
+import wolframalpha
+from rich import print
+from json import JSONDecodeError
+from typing import Optional
+from typing_extensions import Annotated
+
+import src.config as config
+import src.helpers as helpers
+import src.WolframAlpha
+
+FILE_NAME = os.path.basename(__file__)
+
+app = typer.Typer(
+    name='WolframAlpha CLI',
+)
+
+
+@app.command()
+def save(
+        app_id: Annotated[
+            str,
+            typer.Argument(help="WolframAlpha APP_ID")
+        ],
+        path: Annotated[
+            Optional[str],
+            typer.Option(help="Path to save config",
+                         default_factory=config.config_path)
+        ]
+):
+    # Get content from path
+    try:
+        data = config.read_config(path)
+    except (FileNotFoundError, JSONDecodeError):
+        print("[green]Creating new config FILE_NAME[/green]")
+        data = {}
+
+    data['app_id'] = app_id
+    config.save_config(path, data)
+
+    typer.echo(f"Saved config to {path}", color=True)
+
+
+@app.command()
+def view(
+        path: Annotated[
+            Optional[str],
+            typer.Option(help="Path to save config",
+                         default_factory=config.config_path)
+        ]
+):
+    try:
+        data = config.read_config(path)
+        print(data)
+    except FileNotFoundError:
+        print("[bold red]First save your APP_ID[/bold red]")
+        raise typer.Exit()
+
+
+@app.command()
+def usage(
+        app_id: Annotated[
+            Optional[str],
+            typer.Argument(help="App ID", default_factory=config.get_app_id)
+        ]
+):
+    if app_id is None:
+        print(f"[red][bold]Now found APP_ID[/bold]\nSave new config with:[/red]"
+              f" [italic yellow]{FILE_NAME} save APP_ID [PATH][/italic yellow]")
+        raise typer.Exit()
+
+    typer.echo(f"Show {app_id} usage")
+
+
+@app.command("run")
+def main(
+        text: Annotated[
+            Optional[str],
+            typer.Option(help="User input", prompt="What's your question?")
+        ] = None,
+        mode: Annotated[
+            Optional[str],
+            typer.Option(help="Processing mode")
+        ] = "npl",
+        lang: Annotated[
+            Optional[str],
+            typer.Option(help="Language Code")
+        ] = "es"
+):
+    # TODO: add mode and lang support
+    helpers.table_data(mode, lang)
+
+    text: str = text or helpers.get_user_input()
+    mode: str = mode.lower()
+    app_id = config.get_app_id()
+
+    try:
+        print(src.WolframAlpha.query_api(app_id, text))
+    except Exception as e:
+        print(f"[bold red]{e}[/bold red]")
+
+
+if __name__ == "__main__":
+    app()

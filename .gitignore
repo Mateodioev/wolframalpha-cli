@@ -1,0 +1,7 @@
+wolframalpha/
+__pycache__/
+.idea/
+.vscode/
+
+*.pyc
+*.json
