@@ -99,7 +99,16 @@ def main(
     app_id = config.get_app_id()
 
     try:
-        print(src.WolframAlpha.query_api(app_id, text))
+        result = src.WolframAlpha.query_api(app_id, text)
+
+        # check if result is empty
+        if not result:
+            print(f"[bold red]No results for {text}[/bold red]")
+            raise typer.Exit()
+
+        print(f"[bold]Result for {text}[/bold]")
+        print(f"[cian]{result}[/cian]")
+
     except Exception as e:
         print(f"[bold red]{e}[/bold red]")
 
